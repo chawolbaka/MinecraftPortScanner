@@ -1,5 +1,6 @@
 ﻿using System.CommandLine;
 using System.Net;
+using System.Net.NetworkInformation;
 
 namespace MinecraftPortScanner
 {
@@ -32,8 +33,8 @@ namespace MinecraftPortScanner
 
             var timeoutOption = new Option<int>(
                 aliases: new string[] { "-t", "--timeout" },
-                description: "tcp connect timeout",
-                getDefaultValue: () => 100);
+                description: "tcp connect timeout (-1 is auto)",
+                getDefaultValue: () => -1);
 
             rootCommand.AddOption(ipOption);
             rootCommand.AddOption(startPortOption);
@@ -43,6 +44,19 @@ namespace MinecraftPortScanner
             rootCommand.SetHandler(async (ip, start, end, interval, timeout) =>
             {
                 FastScanner scanner = new FastScanner(ip);
+                if (timeout < 0)
+                {
+                    Console.WriteLine("Attempt to retrieve timeout through ICMP.");
+                    Ping ping = new Ping();
+                    PingReply replay = ping.Send(ip, 2000);
+                    if (replay.Status == IPStatus.Success)
+                        timeout = (int)replay.RoundtripTime * 5; //3次握手 + 2的波动
+                    else
+                        timeout = 600;
+                    Console.WriteLine($"Timeout is {timeout}");
+                }
+
+                Console.WriteLine("Start port scanning.");
                 for (ushort port = start; port < end; port++)
                 {
                     Console.CursorLeft = 0;
@@ -50,7 +64,7 @@ namespace MinecraftPortScanner
                     if (await scanner.Scan(port, timeout))
                     {
                         Console.CursorLeft = 0;
-                        Console.WriteLine($"Discovery Port: {port}");
+                        Console.WriteLine($"Discovery port: {port}");
                     }
                         
                 }
