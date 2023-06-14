@@ -36,14 +36,19 @@ namespace MinecraftPortScanner
                 description: "tcp connect timeout (-1 is auto)",
                 getDefaultValue: () => -1);
 
+            var fastscannerOption = new Option<bool>(
+                aliases: new string[] { "-f", "--fast" },
+                description: "fast scan.");
+
             rootCommand.AddOption(ipOption);
             rootCommand.AddOption(startPortOption);
             rootCommand.AddOption(endPortOption);
             rootCommand.AddOption(intervalOption);
             rootCommand.AddOption(timeoutOption);
-            rootCommand.SetHandler(async (ip, start, end, interval, timeout) =>
+            rootCommand.AddOption(fastscannerOption);
+            rootCommand.SetHandler(async (ip, start, end, interval, timeout, fast) =>
             {
-                FastScanner scanner = new FastScanner(ip);
+                Scanner scanner = fast ? new FastScanner(ip) : new FullScanner(ip);
                 if (timeout < 0)
                 {
                     Console.WriteLine("Attempt to retrieve timeout through ICMP.");
@@ -66,9 +71,8 @@ namespace MinecraftPortScanner
                         Console.CursorLeft = 0;
                         Console.WriteLine($"Discovery port: {port}");
                     }
-                        
                 }
-            }, ipOption, startPortOption, endPortOption, intervalOption, timeoutOption);
+            }, ipOption, startPortOption, endPortOption, intervalOption, timeoutOption, fastscannerOption);
             rootCommand.Invoke(args);
         }
     }
