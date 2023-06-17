@@ -55,7 +55,7 @@ namespace MinecraftPortScanner
                     Ping ping = new Ping();
                     PingReply replay = ping.Send(ip, 2000);
                     if (replay.Status == IPStatus.Success)
-                        timeout = (int)replay.RoundtripTime * 5; //3次握手 + 2的波动
+                        timeout = (int)replay.RoundtripTime * 4; //3次握手 + 1的波动
                     else
                         timeout = 600;
                     Console.WriteLine($"Timeout is {timeout}");
