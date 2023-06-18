@@ -14,7 +14,6 @@ namespace MinecraftPortScanner
             var ipOption = new Option<IPAddress>(
                 name: "-ip",
                 description: "server ip");
-            ipOption.IsRequired = true;
 
             var startPortOption = new Option<ushort>(
                 aliases: new string[] { "-s", "--port-start" },
@@ -48,6 +47,16 @@ namespace MinecraftPortScanner
             rootCommand.AddOption(fastscannerOption);
             rootCommand.SetHandler(async (ip, start, end, interval, timeout, fast) =>
             {
+                while (ip == null)
+                {
+                    Console.Write("IP: ");
+                    string input = Console.ReadLine();
+                    if (IPAddress.TryParse(input, out ip))
+                        break;
+                    else
+                        Console.WriteLine("input unavailable");
+                }
+
                 Scanner scanner = fast ? new FastScanner(ip) : new FullScanner(ip);
                 if (timeout < 0)
                 {
