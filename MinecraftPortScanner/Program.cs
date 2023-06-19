@@ -13,31 +13,31 @@ namespace MinecraftPortScanner
 
             var ipOption = new Option<IPAddress>(
                 name: "-ip",
-                description: "server ip");
+                description: Messages.IP);
 
             var startPortOption = new Option<ushort>(
                 aliases: new string[] { "-s", "--port-start" },
-                description: "start port",
+                description: Messages.StartPort,
                 getDefaultValue: () => 1000);
 
             var endPortOption = new Option<ushort>(
                 aliases: new string[] { "-e", "--port-end" },
-                description: "end port",
+                description: Messages.EndPort,
                 getDefaultValue: () => ushort.MaxValue);
 
             var intervalOption = new Option<int>(
                 aliases: new string[] { "-i", "--interval" },
-                description: "scan interval",
+                description: Messages.ScanInterval,
                 getDefaultValue: () => 0);
 
             var timeoutOption = new Option<int>(
                 aliases: new string[] { "-t", "--timeout" },
-                description: "tcp connect timeout (-1 is auto)",
+                description: Messages.TcpConnectTimeout,
                 getDefaultValue: () => -1);
 
             var fastscannerOption = new Option<bool>(
                 aliases: new string[] { "-f", "--fast" },
-                description: "fast scan.");
+                description: Messages.FastScan);
 
             rootCommand.AddOption(ipOption);
             rootCommand.AddOption(startPortOption);
@@ -54,13 +54,13 @@ namespace MinecraftPortScanner
                     if (IPAddress.TryParse(input, out ip))
                         break;
                     else
-                        Console.WriteLine("input unavailable");
+                        Console.WriteLine(Messages.InputUnavailable);
                 }
 
                 Scanner scanner = fast ? new FastScanner(ip) : new FullScanner(ip);
                 if (timeout < 0)
                 {
-                    Console.WriteLine("Attempt to retrieve timeout through ICMP.");
+                    Console.WriteLine(Messages.ICMP);
                     Ping ping = new Ping();
                     PingReply replay = ping.Send(ip, 2000);
                     if (replay.Status == IPStatus.Success)
@@ -70,7 +70,7 @@ namespace MinecraftPortScanner
                     Console.WriteLine($"Timeout is {timeout}");
                 }
 
-                Console.WriteLine("Start port scanning.");
+                Console.WriteLine(Messages.StartPortScanning);
                 for (ushort port = start; port < end; port++)
                 {
                     Console.CursorLeft = 0;
@@ -78,7 +78,7 @@ namespace MinecraftPortScanner
                     if (await scanner.Scan(port, timeout))
                     {
                         Console.CursorLeft = 0;
-                        Console.WriteLine($"Discovery port: {port}");
+                        Console.WriteLine($"{Messages.DiscoveryPort}{port}");
                     }
                 }
             }, ipOption, startPortOption, endPortOption, intervalOption, timeoutOption, fastscannerOption);
