@@ -1,6 +1,9 @@
-﻿using System.CommandLine;
+﻿using System;
+using System.Text;
 using System.Net;
 using System.Net.NetworkInformation;
+using System.CommandLine;
+using MinecraftProtocol.Utils;
 
 namespace MinecraftPortScanner
 {
@@ -10,8 +13,7 @@ namespace MinecraftPortScanner
         {
             var rootCommand = new RootCommand("A minecraft port scanner");
 
-
-            var ipOption = new Option<IPAddress>(
+            var ipOption = new Option<string>(
                 name: "-ip",
                 description: Messages.IP);
 
@@ -47,22 +49,35 @@ namespace MinecraftPortScanner
             rootCommand.AddOption(fastscannerOption);
             rootCommand.SetHandler(async (ip, start, end, interval, timeout, fast) =>
             {
-                while (ip == null)
+                IPAddress address;
+                if (string.IsNullOrWhiteSpace(ip))
                 {
-                    Console.Write("IP: ");
-                    string input = Console.ReadLine();
-                    if (IPAddress.TryParse(input, out ip))
-                        break;
-                    else
-                        Console.WriteLine(Messages.InputUnavailable);
+                    while (true)
+                    {
+                        Console.Write("IP: ");
+                        string input = Console.ReadLine();
+                        try
+                        {
+                            address = (await NetworkUtils.GetIPEndPointAsync(input)).Address;
+                            break;
+                        }
+                        catch (ArgumentException)
+                        {
+                            Console.WriteLine(Messages.InputUnavailable);
+                        }
+                    }
+                }
+                else
+                {
+                    address = (await NetworkUtils.GetIPEndPointAsync(ip)).Address;
                 }
 
-                Scanner scanner = fast ? new FastScanner(ip) : new FullScanner(ip);
+                Scanner scanner = fast ? new FastScanner(address) : new FullScanner(address);
                 if (timeout < 0)
                 {
                     Console.WriteLine(Messages.ICMP);
                     Ping ping = new Ping();
-                    PingReply replay = ping.Send(ip, 2000);
+                    PingReply replay = ping.Send(address, 2000);
                     if (replay.Status == IPStatus.Success)
                         timeout = (int)replay.RoundtripTime * 4; //3次握手 + 1的波动
                     else
@@ -74,7 +89,7 @@ namespace MinecraftPortScanner
                 for (ushort port = start; port < end; port++)
                 {
                     Console.CursorLeft = 0;
-                    Console.Write(port);
+                    Console.Write($"{address}:{port}");
                     if (await scanner.Scan(port, timeout))
                     {
                         Console.CursorLeft = 0;
@@ -85,4 +100,5 @@ namespace MinecraftPortScanner
             rootCommand.Invoke(args);
         }
     }
+   
 }
